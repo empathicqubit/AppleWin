@@ -428,11 +428,20 @@ typedef struct TFE_PCAP_INTERNAL_tag {
 
 } TFE_PCAP_INTERNAL;
 
+#define MAC_FMT "%02X:%02X:%02X:%02X:%02X:%02X"
+#define MAC_DEST(p) p[0], p[1], p[2], p[3], p[4], p[5]
+#define MAC_SOURCE(p) p[6], p[7], p[8], p[9], p[10], p[11]
+
 /* Callback function invoked by libpcap for every incoming packet */
 static
 void TfePcapPacketHandler(u_char *param, const struct pcap_pkthdr *header, const u_char *pkt_data)
 {
-	/* RGJ changed from void to TFE_PCAP_INTERNAL for AppleWin */
+    if (g_fh && header->caplen >= 12)
+    {
+        fprintf(g_fh, "PCAP: " MAC_FMT " -> " MAC_FMT ": %d @ %d.%d\n", MAC_SOURCE(pkt_data), MAC_DEST(pkt_data), header->caplen, header->ts.tv_sec, header->ts.tv_usec);
+    }
+
+    /* RGJ changed from void to TFE_PCAP_INTERNAL for AppleWin */
 	TFE_PCAP_INTERNAL *pinternal = (TFE_PCAP_INTERNAL *)param;
 
     /* determine the count of bytes which has been returned, 
@@ -465,9 +474,9 @@ int tfe_arch_receive_frame(pcap_t * TfePcapFP, TFE_PCAP_INTERNAL *pinternal)
         ret = pinternal->rxlength;
     }
 
-#ifdef TFE_DEBUG_ARCH
+//#ifdef TFE_DEBUG_ARCH
     if(g_fh) fprintf( g_fh, "tfe_arch_receive_frame() called, returns %d.\n", ret );
-#endif
+//#endif
 
     return ret;
 }
