@@ -29,6 +29,9 @@ public:
 	// process pending packets
 	virtual bool isValid();
 
+	// get MAC for IPRAW
+	virtual void getGatewayMACAddress(const size_t size, uint8_t * mac);
+
 	static void tfe_SetRegistryInterface(UINT slot, const std::string& name);
 	static void get_disabled_state(int * param);
 

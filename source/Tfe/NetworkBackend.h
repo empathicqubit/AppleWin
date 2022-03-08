@@ -26,6 +26,9 @@ public:
 	// process pending packets
 	virtual void update(const ULONG nExecutedCycles) = 0;
 
+	// get MAC for IPRAW
+	virtual void getGatewayMACAddress(const size_t size, uint8_t * mac) = 0;
+
 	// if the backend is usable
 	virtual bool isValid() = 0;
 };

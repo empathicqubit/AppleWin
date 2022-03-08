@@ -75,9 +75,9 @@ typedef int socklen_t;
 #endif
 
 // #define U2_LOG_VERBOSE
-// #define U2_LOG_TRAFFIC
-// #define U2_LOG_STATE
-// #define U2_LOG_UNKNOWN
+#define U2_LOG_TRAFFIC
+#define U2_LOG_STATE
+#define U2_LOG_UNKNOWN
 
 #define MAC_FMT "%02X:%02X:%02X:%02X:%02X:%02X"
 #define MAC_DEST(p) p[0], p[1], p[2], p[3], p[4], p[5]

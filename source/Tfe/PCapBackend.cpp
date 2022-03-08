@@ -25,6 +25,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "../Common.h"
 #include "../Registry.h"
 
+#include <iphlpapi.h>
+
 std::string PCapBackend::tfe_interface;
 
 PCapBackend::PCapBackend(const std::string & pcapInterface)
@@ -69,6 +71,19 @@ bool PCapBackend::isValid()
 void PCapBackend::update(const ULONG /* nExecutedCycles */)
 {
     // nothing to do
+}
+
+void PCapBackend::getGatewayMACAddress(const size_t size, uint8_t * mac)
+{
+    DWORD dwDestAddress = INADDR_ANY;
+    DWORD dwSourceAddress = INADDR_ANY;
+    MIB_IPFORWARDROW res;
+    DWORD result = GetBestRoute(dwDestAddress, dwSourceAddress, &res);
+    if (result == NO_ERROR)
+    {
+        ULONG len = size;
+        result = SendARP(res.dwForwardNextHop, dwSourceAddress, mac, &len);
+    }
 }
 
 int PCapBackend::tfe_enumadapter_open(void)
