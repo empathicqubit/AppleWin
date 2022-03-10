@@ -854,7 +854,7 @@ uint8_t Uthernet2::readSocketRegister(const uint16_t address)
         break;
     default:
 #ifdef U2_LOG_UNKNOWN
-        LogFileOutput("U2: Get unknown socket register[%" SIZE_T_FMT "]: %04x\n", i, address);
+        LogFileOutput("U2: Get unknown socket register[%d]: %04x\n", i, address);
 #endif
         value = myMemory[address];
         break;
@@ -988,7 +988,7 @@ void Uthernet2::writeSocketRegister(const uint16_t address, const uint8_t value)
         break;
 #ifdef U2_LOG_UNKNOWN
     default:
-        LogFileOutput("U2: Set unknown socket register[%" SIZE_T_FMT "]: %04x\n", i, address);
+        LogFileOutput("U2: Set unknown socket register[%d]: %04x\n", i, address);
         break;
 #endif
     };
