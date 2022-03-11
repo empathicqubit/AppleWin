@@ -54,6 +54,8 @@ class Uthernet2 : public Card
 public:
     static const std::string& GetSnapshotCardName();
 
+    enum PacketDestination { HOST, BROADCAST, OTHER };
+
     Uthernet2(UINT slot);
 
 	virtual void Destroy(void) {}
@@ -66,6 +68,8 @@ public:
     BYTE IO_C0(WORD programcounter, WORD address, BYTE write, BYTE value, ULONG nCycles);
 
 private:
+    const size_t myIPMinimumSize;
+
     std::vector<uint8_t> myMemory;
     std::vector<Socket> mySockets;
     uint8_t myModeRegister;
@@ -79,11 +83,14 @@ private:
     uint8_t getTXFreeSizeRegister(const size_t i, const size_t shift) const;
     uint8_t getRXDataSizeRegister(const size_t i, const size_t shift) const;
 
-    void receiveOnePacketMacRaw(const size_t i);
+    void receiveOnePacketRaw();
+    void receiveOnePacketIPRaw(const size_t i, const size_t lengthOfPayload, const uint8_t * payload, const uint32_t destination, const uint8_t protocol, const int len);
+    void receiveOnePacketMacRaw(const size_t i, const int size, uint8_t * data);
     void receiveOnePacketFromSocket(const size_t i);
     void receiveOnePacket(const size_t i);
-    int receiveForMacAddress(const bool acceptAll, const int size, uint8_t * data);
+    int receiveForMacAddress(const bool acceptAll, const int size, uint8_t * data, PacketDestination & packetDestination);
 
+    void sendDataIPRaw(const size_t i, std::vector<uint8_t> &data) const;
     void sendDataMacRaw(const size_t i, std::vector<uint8_t> &data) const;
     void sendDataToSocket(const size_t i, std::vector<uint8_t> &data);
     void sendData(const size_t i);
