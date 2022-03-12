@@ -73,16 +73,28 @@ void PCapBackend::update(const ULONG /* nExecutedCycles */)
     // nothing to do
 }
 
-void PCapBackend::getGatewayMACAddress(const size_t size, uint8_t * mac)
+void PCapBackend::getMACAddress(const uint32_t address, MACAddress & mac)
 {
-    DWORD dwDestAddress = INADDR_ANY;
     DWORD dwSourceAddress = INADDR_ANY;
     MIB_IPFORWARDROW res;
-    DWORD result = GetBestRoute(dwDestAddress, dwSourceAddress, &res);
+    DWORD result = GetBestRoute(address, dwSourceAddress, &res);
     if (result == NO_ERROR)
     {
-        ULONG len = size;
-        result = SendARP(res.dwForwardNextHop, dwSourceAddress, mac, &len);
+        ULONG len = sizeof(MACAddress::address);
+        IPAddr ip;
+        switch (res.ForwardType)
+        {
+        case MIB_IPROUTE_TYPE_DIRECT:
+            ip = address;
+            break;
+        case MIB_IPROUTE_TYPE_INDIRECT:
+            ip = res.dwForwardNextHop;
+            break;
+        default:
+            ip = INADDR_ANY;  // ???
+            break;
+        }
+        result = SendARP(ip, dwSourceAddress, mac.address, &len);
     }
 }
 

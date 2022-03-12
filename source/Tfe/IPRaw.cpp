@@ -1,6 +1,31 @@
+/*
+AppleWin : An Apple //e emulator for Windows
+
+Copyright (C) 2022, Andrea Odetti
+
+AppleWin is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+AppleWin is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with AppleWin; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
+
+#include "StdAfx.h"
+
 #include "IPRaw.h"
 #include <cstring>
+
+#ifndef _MSC_VER
 #include <arpa/inet.h>
+#endif
 
 #define IPV4 0x04
 
@@ -72,7 +97,7 @@ namespace
 }
 
 std::vector<uint8_t> createETH2Frame(const std::vector<uint8_t> &data,
-                                     const uint8_t *sourceMac, const uint8_t *destinationMac,
+                                     const MACAddress * sourceMac, const MACAddress *destinationMac,
                                      const uint8_t ttl, const uint8_t tos, const uint8_t protocol,
                                      const uint32_t sourceAddress, const uint32_t destinationAddress)
 {
@@ -87,7 +112,7 @@ std::vector<uint8_t> createETH2Frame(const std::vector<uint8_t> &data,
     ip4header->version = IPV4;
     ip4header->ihl = 0x05;
     ip4header->tos = tos;
-    ip4header->len = htons(sizeof(IP4Header) + data.size());
+    ip4header->len = htons(static_cast<uint16_t>(sizeof(IP4Header) + data.size()));
     ip4header->id = 0;
     ip4header->fragmentOffset = 0;
     ip4header->ttl = ttl;
@@ -101,16 +126,16 @@ std::vector<uint8_t> createETH2Frame(const std::vector<uint8_t> &data,
     return frame;
 }
 
-size_t getIPMinimumSize()
+int getIPMinimumSize()
 {
-    const size_t minimumSize = sizeof(ETH2Frame) + sizeof(IP4Header) + 0; // 0 len
+    const int minimumSize = sizeof(ETH2Frame) + sizeof(IP4Header) + 0; // 0 len
     return minimumSize;
 }
 
-void getIPPayload(const size_t lengthOfFrame, const uint8_t *frame,
+void getIPPayload(const int lengthOfFrame, const uint8_t *frame,
                   size_t &lengthOfPayload, const uint8_t *&payload, uint32_t &destination, uint8_t &protocol)
 {
-    const size_t minimumSize = getIPMinimumSize();
+    const int minimumSize = getIPMinimumSize();
     if (lengthOfFrame > minimumSize)
     {
         const ETH2Frame *eth2Frame = reinterpret_cast<const ETH2Frame *>(frame);
@@ -119,7 +144,7 @@ void getIPPayload(const size_t lengthOfFrame, const uint8_t *frame,
         {
             const uint16_t ipv4HeaderSize = ip4header->ihl * 4;
             const uint16_t ipPacketSize = ntohs(ip4header->len);
-            const size_t expectedSize = sizeof(ETH2Frame) + ipPacketSize;
+            const int expectedSize = sizeof(ETH2Frame) + ipPacketSize;
             if (ipPacketSize > ipv4HeaderSize && lengthOfFrame >= expectedSize)
             {
                 protocol = ip4header->proto;

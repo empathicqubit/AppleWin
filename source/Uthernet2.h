@@ -3,8 +3,10 @@
 #include "Card.h"
 
 #include <vector>
+#include <map>
 
 class NetworkBackend;
+struct MACAddress;
 
 struct Socket
 {
@@ -68,13 +70,17 @@ public:
     BYTE IO_C0(WORD programcounter, WORD address, BYTE write, BYTE value, ULONG nCycles);
 
 private:
-    const size_t myIPMinimumSize;
+    const int myIPMinimumSize;
 
     std::vector<uint8_t> myMemory;
     std::vector<Socket> mySockets;
     uint8_t myModeRegister;
     uint16_t myDataAddress;
     std::shared_ptr<NetworkBackend> myNetworkBackend;
+
+    std::map<uint32_t, MACAddress> myARPTable;
+
+    void GetMACAddress(const uint32_t address, const MACAddress * & mac);
 
     void setSocketModeRegister(const size_t i, const uint16_t address, const uint8_t value);
     void setTXSizes(const uint16_t address, uint8_t value);
@@ -90,7 +96,7 @@ private:
     void receiveOnePacket(const size_t i);
     int receiveForMacAddress(const bool acceptAll, const int size, uint8_t * data, PacketDestination & packetDestination);
 
-    void sendDataIPRaw(const size_t i, std::vector<uint8_t> &data) const;
+    void sendDataIPRaw(const size_t i, std::vector<uint8_t> &data);
     void sendDataMacRaw(const size_t i, std::vector<uint8_t> &data) const;
     void sendDataToSocket(const size_t i, std::vector<uint8_t> &data);
     void sendData(const size_t i);

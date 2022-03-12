@@ -6,6 +6,14 @@
 #define MAX_RXLENGTH 1518
 #define MIN_RXLENGTH 64
 
+#pragma pack(push)
+#pragma pack(1) // Ensure struct is packed
+struct MACAddress
+{
+	uint8_t address[6];
+};
+#pragma pack(pop)
+
 class NetworkBackend
 {
 public:
@@ -27,7 +35,7 @@ public:
 	virtual void update(const ULONG nExecutedCycles) = 0;
 
 	// get MAC for IPRAW
-	virtual void getGatewayMACAddress(const size_t size, uint8_t * mac) = 0;
+	virtual void getMACAddress(const uint32_t address, MACAddress & mac) = 0;
 
 	// if the backend is usable
 	virtual bool isValid() = 0;

@@ -497,23 +497,19 @@ int Uthernet2::receiveForMacAddress(const bool acceptAll, const int size, uint8_
 void Uthernet2::receiveOnePacketRaw()
 {
     bool acceptAll = false;
-    // see if any raw socket is looking for all packets
-    // otherwise we drop them immediately (which is the standard)
-    for (const Socket & socket : mySockets)
+    int macRawSocket = -1;  // to which IPRaw soccket to send to (can only be 0)
+
+    Socket & socket0 = mySockets[0];
+    if (socket0.sn_sr == W5100_SN_SR_SOCK_MACRAW)
     {
-        switch (socket.sn_sr)
+        macRawSocket = 0;  // the only MAC Raw socket is open, packet will go there as a fallback
+        const uint8_t mr = myMemory[socket0.registerAddress + W5100_SN_MR];
+
+        // see if MAC RAW filters or not
+        const bool filterMAC = mr & W5100_SN_MR_MF;
+        if (!filterMAC)
         {
-            case W5100_SN_SR_SOCK_IPRAW:
-            case W5100_SN_SR_SOCK_MACRAW:
-            {
-                const uint8_t mr = myMemory[socket.registerAddress + W5100_SN_MR];
-                const bool filterMAC = mr & W5100_SN_MR_MF;
-                if (!filterMAC)
-                {
-                    acceptAll = true;
-                }
-                break;
-            }
+            acceptAll = true;
         }
     }
 
@@ -528,44 +524,23 @@ void Uthernet2::receiveOnePacketRaw()
         uint8_t packetProtocol;
         getIPPayload(len, buffer, lengthOfPayload, payload, destination, packetProtocol);
 
-        int macRawSocket = -1;
+        // see if there is a IPRAW socket that should accept thi spacket
         int ipRawSocket = -1;
-        // find the destination socket
-        // match IPRAW by protocol, otherwise send to MACRAW (if open)
-        for (size_t i = 0; i < mySockets.size(); ++ i)
+        if (packetDestination != OTHER)  // IPRaw always filters (HOST or BROADCAST, never OTHER)
         {
-            Socket & socket = mySockets[i];
-
-            if (packetDestination == OTHER) // some sockets are accepting all packets
+            for (size_t i = 0; i < mySockets.size(); ++i)
             {
-                // This is a packet not for this host
-                // see if this sockets is listening to all
-                const uint8_t mr = myMemory[socket.registerAddress + W5100_SN_MR];
-                const bool filterMAC = mr & W5100_SN_MR_MF;
-                if (filterMAC)
-                {
-                    // socket is filtering, packet not acceptable, try next socket
-                    continue;
-                }
-            }
+                Socket & socket = mySockets[i];
 
-            switch (socket.sn_sr)
-            {
-                case W5100_SN_SR_SOCK_MACRAW:
+                if (socket.sn_sr == W5100_SN_SR_SOCK_IPRAW)
                 {
-                    // MAC always accepts
-                    macRawSocket = i;
-                    break;
-                }
-                case W5100_SN_SR_SOCK_IPRAW:
-                {
-                    // IP only accepts by protocol
+                    // IP only accepts by protocol & always filters MAC
                     const uint8_t socketProtocol = myMemory[socket.registerAddress + W5100_SN_PROTO];
                     if (payload && packetProtocol == socketProtocol)
                     {
                         ipRawSocket = i;
+                        break; // a valid IPRAW socket has been found
                     }
-                    break;
                 }
             }
         }
@@ -575,14 +550,14 @@ void Uthernet2::receiveOnePacketRaw()
         {
             receiveOnePacketIPRaw(ipRawSocket, lengthOfPayload, payload, destination, packetProtocol, len);
         }
-        //fallback to MACRAW (if open)
+        // fallback to MACRAW (if open)
         else if (macRawSocket >= 0)
         {
             receiveOnePacketMacRaw(macRawSocket, len, buffer);
         }
+        // else packet is dropped
     }
 }
-
 
 void Uthernet2::receiveOnePacketMacRaw(const size_t i, const int size, uint8_t * data)
 {
@@ -613,7 +588,7 @@ void Uthernet2::receiveOnePacketIPRaw(const size_t i, const size_t lengthOfPaylo
     {
         writeDataIPRaw(socket, myMemory, payload, lengthOfPayload, destination);
 #ifdef U2_LOG_TRAFFIC
-        LogFileOutput("U2: Read IPRAW[%" SIZE_T_FMT "]: +%" SIZE_T_FMT "(%d) -> %d bytes\n", i, lengthOfPayload, len, socket.sn_rx_rsr);
+        LogFileOutput("U2: Read IPRAW[%" SIZE_T_FMT "]: +%" SIZE_T_FMT " (%d) -> %d bytes\n", i, lengthOfPayload, len, socket.sn_rx_rsr);
 #endif
     }
     else
@@ -690,7 +665,7 @@ void Uthernet2::receiveOnePacket(const size_t i)
     };
 }
 
-void Uthernet2::sendDataIPRaw(const size_t i, std::vector<uint8_t> &payload) const
+void Uthernet2::sendDataIPRaw(const size_t i, std::vector<uint8_t> &payload)
 {
     const Socket &socket = mySockets[i];
 
@@ -700,13 +675,14 @@ void Uthernet2::sendDataIPRaw(const size_t i, std::vector<uint8_t> &payload) con
     const uint32_t source = readAddress(myMemory.data() + W5100_SIPR0);
     const uint32_t destination = readAddress(myMemory.data() + socket.registerAddress + W5100_SN_DIPR0);
 
-    const uint8_t * sourceMac = myMemory.data() + W5100_SHAR0;
-    const uint8_t destinationMac[6] = {0x52, 0x55, 0x0A, 0x00, 0x00, 0x01};
+    const MACAddress * sourceMac = reinterpret_cast<const MACAddress *>(myMemory.data() + W5100_SHAR0);
+    const MACAddress * destinationMac;
+    GetMACAddress(destination, destinationMac);
 
     std::vector<uint8_t> packet = createETH2Frame(payload, sourceMac, destinationMac, ttl, tos, protocol, source, destination);
 
 #ifdef U2_LOG_TRAFFIC
-    LogFileOutput("U2: Send IPRAW[%" SIZE_T_FMT "]: %" SIZE_T_FMT " bytes (%" SIZE_T_FMT ")\n", i, payload.size(), packet.size());
+    LogFileOutput("U2: Send IPRAW[%" SIZE_T_FMT "]: %" SIZE_T_FMT " (%" SIZE_T_FMT ") bytes\n", i, payload.size(), packet.size());
 #endif
 
     myNetworkBackend->transmit(packet.size(), packet.data());
@@ -1216,6 +1192,7 @@ void Uthernet2::Reset(const bool powerCycle)
         // dataAddress is NOT reset, see page 10 of Uthernet II
         myDataAddress = 0;
         myNetworkBackend = GetFrame().CreateNetworkBackend();
+        myARPTable.clear();
     }
 
     mySockets.clear();
@@ -1314,6 +1291,27 @@ BYTE __stdcall u2_C0(WORD programcounter, WORD address, BYTE write, BYTE value, 
 void Uthernet2::InitializeIO(LPBYTE pCxRomPeripheral)
 {
     RegisterIoHandler(m_slot, u2_C0, u2_C0, nullptr, nullptr, this, nullptr);
+}
+
+void Uthernet2::GetMACAddress(const uint32_t address, const MACAddress * & mac)
+{
+    const auto it = myARPTable.find(address);
+    if (it != myARPTable.end())
+    {
+        mac = &it->second;
+    }
+    else
+    {
+        MACAddress & macAddr = myARPTable[address];
+        memset(macAddr.address, 0xFF, sizeof(macAddr.address));
+
+        // need to handle the case of the W5100 self address unknown to Windows
+        if (address != INADDR_BROADCAST)
+        {
+            myNetworkBackend->getMACAddress(address, macAddr);
+        }
+        mac = &macAddr;
+    }
 }
 
 void Uthernet2::Update(const ULONG nExecutedCycles)
