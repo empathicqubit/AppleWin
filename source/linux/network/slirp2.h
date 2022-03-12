@@ -30,6 +30,9 @@ public:
   void update(const ULONG nExecutedCycles) override;
   bool isValid() override;
 
+  // get MAC for IPRAW
+  void getMACAddress(const uint32_t address, MACAddress & mac) override;
+
   void sendToGuest(const uint8_t *pkt, int pkt_len);
 
   int addPoll(const int fd, const int events);

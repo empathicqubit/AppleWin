@@ -25,7 +25,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "../Common.h"
 #include "../Registry.h"
 
+#ifdef _MSC_VER
 #include <iphlpapi.h>
+#endif
 
 std::string PCapBackend::tfe_interface;
 
@@ -75,6 +77,7 @@ void PCapBackend::update(const ULONG /* nExecutedCycles */)
 
 void PCapBackend::getMACAddress(const uint32_t address, MACAddress & mac)
 {
+#ifdef _MSC_VER
     DWORD dwSourceAddress = INADDR_ANY;
     MIB_IPFORWARDROW res;
     DWORD result = GetBestRoute(address, dwSourceAddress, &res);
@@ -96,6 +99,7 @@ void PCapBackend::getMACAddress(const uint32_t address, MACAddress & mac)
         }
         result = SendARP(ip, dwSourceAddress, mac.address, &len);
     }
+#endif
 }
 
 int PCapBackend::tfe_enumadapter_open(void)

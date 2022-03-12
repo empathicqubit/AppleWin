@@ -110,7 +110,7 @@ SlirpBackend::SlirpBackend()
     .vnetmask = { .s_addr = IP_PACK(255, 255, 255, 0) },
     .vhost = { .s_addr = IP_PACK(10, 0, 0, 1) },
     .vhostname = "applewin",
-    .vdhcp_start = { .s_addr = IP_PACK(10, 0, 0, 2) },
+    .vdhcp_start = { .s_addr = IP_PACK(10, 0, 0, 10) },
   };
   static const SlirpCb slirp_cb =
   {
@@ -198,6 +198,11 @@ int SlirpBackend::getREvents(const int idx) const
 bool SlirpBackend::isValid()
 {
   return true;
+}
+
+void SlirpBackend::getMACAddress(const uint32_t /* address */, MACAddress & /* mac */)
+{
+  // not needed for libslirp
 }
 
 #endif
