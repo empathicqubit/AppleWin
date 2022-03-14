@@ -39,4 +39,9 @@ public:
 
 	// if the backend is usable
 	virtual bool isValid() = 0;
+
+	static void dumpPacket(
+			const int txlength, /* Frame length */
+			uint8_t *txframe		/* Data */
+	);
 };

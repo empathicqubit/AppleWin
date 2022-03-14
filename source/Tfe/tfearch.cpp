@@ -39,10 +39,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <chrono>
+
 #include <StdAfx.h> // this is necessary in linux, but in MSVC windows.h MUST come after winsock2.h (from pcap.h above)
 #include "tfearch.h"
 #include "../Log.h"
-
 
 /** #define TFE_DEBUG_ARCH 1 **/
 /** #define TFE_DEBUG_PKTDUMP 1 **/
@@ -55,7 +56,8 @@ int tfe_cannot_use = 0;
 
 #ifdef _MSC_VER
 
-typedef pcap_t	*(*pcap_open_live_t)(const char *, int, int, int, char *);
+typedef pcap_t *(*pcap_open_live_t)(const char *, int, int, int, char *);
+typedef pcap_t *(*pcap_open_dead_t)(int, int);
 typedef void (*pcap_close_t)(pcap_t *);
 typedef int (*pcap_dispatch_t)(pcap_t *, int, pcap_handler, u_char *);
 typedef int (*pcap_setnonblock_t)(pcap_t *, int, char *);
@@ -64,16 +66,23 @@ typedef int (*pcap_findalldevs_t)(pcap_if_t **, char *);
 typedef void (*pcap_freealldevs_t)(pcap_if_t *);
 typedef int (*pcap_sendpacket_t)(pcap_t *p, u_char *buf, int size);
 typedef const char *(*pcap_lib_version_t)(void);
+typedef pcap_dumper_t *(*pcap_dump_open_t)(pcap_t *, const char *);
+typedef void (*pcap_dump_close_t)(pcap_dumper_t *);
+typedef void (*pcap_dump_t)(u_char *, const struct pcap_pkthdr *, const u_char *);
 
-static pcap_open_live_t   p_pcap_open_live;
-static pcap_close_t       p_pcap_close;
-static pcap_dispatch_t    p_pcap_dispatch;
+static pcap_open_live_t p_pcap_open_live;
+static pcap_open_dead_t p_pcap_open_dead;
+static pcap_close_t p_pcap_close;
+static pcap_dispatch_t p_pcap_dispatch;
 static pcap_setnonblock_t p_pcap_setnonblock;
 static pcap_findalldevs_t p_pcap_findalldevs;
 static pcap_freealldevs_t p_pcap_freealldevs;
 static pcap_sendpacket_t  p_pcap_sendpacket;
 static pcap_datalink_t p_pcap_datalink;
 static pcap_lib_version_t p_pcap_lib_version;
+static pcap_dump_open_t p_pcap_dump_open;
+static pcap_dump_close_t p_pcap_dump_close;
+static pcap_dump_t p_pcap_dump;
 
 static HINSTANCE pcap_library = NULL;
 
@@ -87,6 +96,7 @@ void TfePcapFreeLibrary(void)
         pcap_library = NULL;
 
         p_pcap_open_live = NULL;
+        p_pcap_open_dead = NULL;
         p_pcap_close = NULL;
         p_pcap_dispatch = NULL;
         p_pcap_setnonblock = NULL;
@@ -95,6 +105,9 @@ void TfePcapFreeLibrary(void)
         p_pcap_sendpacket = NULL;
         p_pcap_datalink = NULL;
         p_pcap_lib_version = NULL;
+        p_pcap_dump_open = NULL;
+        p_pcap_dump_close = NULL;
+        p_pcap_dump = NULL;
     }
 }
 
@@ -127,6 +140,7 @@ BOOL TfePcapLoadLibrary(void)
         }
 
         GET_PROC_ADDRESS_AND_TEST(pcap_open_live);
+        GET_PROC_ADDRESS_AND_TEST(pcap_open_dead);
         GET_PROC_ADDRESS_AND_TEST(pcap_close);
         GET_PROC_ADDRESS_AND_TEST(pcap_dispatch);
         GET_PROC_ADDRESS_AND_TEST(pcap_setnonblock);
@@ -135,6 +149,9 @@ BOOL TfePcapLoadLibrary(void)
         GET_PROC_ADDRESS_AND_TEST(pcap_sendpacket);
         GET_PROC_ADDRESS_AND_TEST(pcap_datalink);
         GET_PROC_ADDRESS_AND_TEST(pcap_lib_version);
+        GET_PROC_ADDRESS_AND_TEST(pcap_dump_open);
+        GET_PROC_ADDRESS_AND_TEST(pcap_dump_close);
+        GET_PROC_ADDRESS_AND_TEST(pcap_dump);
         LogOutput("%s\n", p_pcap_lib_version());
         LogFileOutput("%s\n", p_pcap_lib_version());
     }
@@ -148,6 +165,7 @@ BOOL TfePcapLoadLibrary(void)
 
 // libpcap is a standard package, just link to it
 #define p_pcap_open_live pcap_open_live
+#define p_pcap_open_dead pcap_open_dead
 #define p_pcap_close pcap_close
 #define p_pcap_dispatch pcap_dispatch
 #define p_pcap_setnonblock pcap_setnonblock
@@ -156,6 +174,9 @@ BOOL TfePcapLoadLibrary(void)
 #define p_pcap_sendpacket pcap_sendpacket
 #define p_pcap_datalink pcap_datalink
 #define p_pcap_lib_version pcap_lib_version
+#define p_pcap_dump_open pcap_dump_open
+#define p_pcap_dump_close pcap_dump_close
+#define p_pcap_dump pcap_dump
 
 static BOOL TfePcapLoadLibrary(void)
 {
@@ -538,6 +559,30 @@ int tfe_arch_receive(pcap_t * TfePcapFP,
     }
 
     return -1;
+}
+
+void tfe_pcap_dump_open(const char *fname, const int len, pcap_t *&pcap, pcap_dumper_t *&dumper)
+{
+    pcap = p_pcap_open_dead(DLT_EN10MB, len);
+    dumper = p_pcap_dump_open(pcap, fname);
+}
+
+void tfe_pcap_dump_close(pcap_t *pcap, pcap_dumper_t *dumper)
+{
+    p_pcap_close(pcap);
+    p_pcap_dump_close(dumper);
+}
+
+void tfe_pcap_dump(pcap_dumper_t *dumper, const int txlength, uint8_t *txframe)
+{
+    if (dumper)
+    {
+        pcap_pkthdr header = {.caplen = static_cast<bpf_u_int32>(txlength), .len = static_cast<bpf_u_int32>(txlength)};
+        const uint64_t microseconds_since_epoch = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        header.ts.tv_sec = microseconds_since_epoch / 1000000;
+        header.ts.tv_usec = microseconds_since_epoch % 1000000;
+        p_pcap_dump(reinterpret_cast<u_char *>(dumper), &header, txframe);
+    }
 }
 
 //#endif /* #ifdef HAVE_TFE */

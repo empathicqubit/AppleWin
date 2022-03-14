@@ -131,6 +131,7 @@ SlirpBackend::SlirpBackend()
 void SlirpBackend::transmit(const int txlength,	uint8_t *txframe)
 {
   slirp_input(mySlirp.get(), txframe, txlength);
+  dumpPacket(txlength, txframe);
 }
 
 int SlirpBackend::receive(const int size,	uint8_t * rxframe)
@@ -146,6 +147,7 @@ int SlirpBackend::receive(const int size,	uint8_t * rxframe)
       ++received;
     }
     myQueue.pop();
+    dumpPacket(received, rxframe);
     return received;
   }
   else

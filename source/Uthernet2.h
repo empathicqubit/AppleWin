@@ -49,6 +49,7 @@ struct Socket
 * Documentation from
 *   http://dserver.macgui.com/Uthernet%20II%20manual%2017%20Nov%2018.pdf
 *   https://www.wiznet.io/wp-content/uploads/wiznethome/Chip/W5100/Document/W5100_DS_V128E.pdf
+*   https://www.wiznet.io/wp-content/uploads/wiznethome/Chip/W5100/Document/3150Aplus_5100_ES_V260E.pdf
 */
 
 class Uthernet2 : public Card

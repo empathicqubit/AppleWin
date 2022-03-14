@@ -39,6 +39,8 @@ extern int tfe_cannot_use;
 
 struct pcap;
 typedef struct pcap pcap_t;
+struct pcap_dumper;
+typedef struct pcap_dumper pcap_dumper_t;
 
 pcap_t * TfePcapOpenAdapter(const std::string & interface_name);
 void TfePcapCloseAdapter(pcap_t * TfePcapFP);
@@ -70,5 +72,9 @@ int tfe_arch_receive(pcap_t * TfePcapFP,
 extern int tfe_arch_enumadapter_open(void);
 extern int tfe_arch_enumadapter(std::string & name, std::string & description);
 extern int tfe_arch_enumadapter_close(void);
+
+extern void tfe_pcap_dump_open(const char *fname, const int len, pcap_t *&pcap, pcap_dumper_t *&dumper);
+extern void tfe_pcap_dump_close(pcap_t *pcap, pcap_dumper_t *dumper);
+extern void tfe_pcap_dump(pcap_dumper_t *dumper, const int txlength, uint8_t *txframe);
 
 #endif

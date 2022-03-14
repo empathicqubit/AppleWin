@@ -21,6 +21,46 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "StdAfx.h"
 #include "NetworkBackend.h"
 
+#include "Tfe/tfearch.h"
+
 NetworkBackend::~NetworkBackend()
 {
+}
+
+namespace
+{
+
+  class PCAPDumper
+  {
+  private:
+    pcap_t *myPcap;
+    pcap_dumper_t *myDumper;
+
+  public:
+    PCAPDumper()
+    {
+      tfe_pcap_dump_open("/tmp/applewin.pcap", 16384, myPcap, myDumper);
+    }
+
+    ~PCAPDumper()
+    {
+      tfe_pcap_dump_close(myPcap, myDumper);
+    }
+
+    void dumpPacket(
+        const int txlength, /* Frame length */
+        uint8_t *txframe /* Data */)
+    {
+      tfe_pcap_dump(myDumper, txlength, txframe);
+    }
+  };
+
+  PCAPDumper dumper;
+}
+
+void NetworkBackend::dumpPacket(
+    const int txlength, /* Frame length */
+    uint8_t *txframe /* Data */)
+{
+  dumper.dumpPacket(txlength, txframe);
 }

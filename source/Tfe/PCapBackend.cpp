@@ -50,6 +50,7 @@ void PCapBackend::transmit(
     if (tfePcapFP)
     {
         tfe_arch_transmit(tfePcapFP, txlength, txframe);
+        dumpPacket(txlength, txframe);
     }
 }
 
@@ -57,7 +58,9 @@ int PCapBackend::receive(const int size, uint8_t * rxframe)
 {
     if (tfePcapFP)
     {
-        return tfe_arch_receive(tfePcapFP, size, rxframe);
+        const int rxlength = tfe_arch_receive(tfePcapFP, size, rxframe);
+        dumpPacket(rxlength, rxframe);
+        return rxlength;
     }
     else
     {
