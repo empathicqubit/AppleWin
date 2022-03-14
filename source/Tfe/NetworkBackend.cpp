@@ -23,6 +23,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include "Tfe/tfearch.h"
 
+#ifdef _MSC_VER
+#define PCAP_FILENAME "AppleWin.pcap"
+#else
+#define PCAP_FILENAME "/tmp/AppleWin.pcap"
+#endif
+
 NetworkBackend::~NetworkBackend()
 {
 }
@@ -39,7 +45,7 @@ namespace
   public:
     PCAPDumper()
     {
-      tfe_pcap_dump_open("/tmp/applewin.pcap", 16384, myPcap, myDumper);
+      tfe_pcap_dump_open(PCAP_FILENAME, 16384, myPcap, myDumper);
     }
 
     ~PCAPDumper()

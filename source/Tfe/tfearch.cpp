@@ -29,6 +29,7 @@
 
 #ifdef _MSC_VER
 #include "pcap.h"
+#undef min
 #else
 // on Linux and Mac OS X, we use system's pcap.h, which needs to be included as <>
 #include <pcap.h>
@@ -563,24 +564,41 @@ int tfe_arch_receive(pcap_t * TfePcapFP,
 
 void tfe_pcap_dump_open(const char *fname, const int len, pcap_t *&pcap, pcap_dumper_t *&dumper)
 {
-    pcap = p_pcap_open_dead(DLT_EN10MB, len);
-    dumper = p_pcap_dump_open(pcap, fname);
+    pcap = NULL;
+    dumper = NULL;
+    if (TfePcapLoadLibrary())
+    {
+        pcap = p_pcap_open_dead(DLT_EN10MB, len);
+        dumper = p_pcap_dump_open(pcap, fname);
+    }
 }
 
 void tfe_pcap_dump_close(pcap_t *pcap, pcap_dumper_t *dumper)
 {
-    p_pcap_close(pcap);
-    p_pcap_dump_close(dumper);
+    if (pcap)
+    {
+        p_pcap_close(pcap);
+    }
+
+    if (dumper)
+    {
+        p_pcap_dump_close(dumper);
+    }
 }
 
 void tfe_pcap_dump(pcap_dumper_t *dumper, const int txlength, uint8_t *txframe)
 {
-    if (dumper)
+    if (dumper && txlength > 0)
     {
-        pcap_pkthdr header = {.caplen = static_cast<bpf_u_int32>(txlength), .len = static_cast<bpf_u_int32>(txlength)};
+        pcap_pkthdr header;
+
+        header.caplen = static_cast<bpf_u_int32>(txlength);
+        header.len = header.caplen;
+
         const uint64_t microseconds_since_epoch = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        header.ts.tv_sec = microseconds_since_epoch / 1000000;
-        header.ts.tv_usec = microseconds_since_epoch % 1000000;
+        header.ts.tv_sec = static_cast<long>(microseconds_since_epoch / 1000000);
+        header.ts.tv_usec = static_cast<long>(microseconds_since_epoch % 1000000);
+
         p_pcap_dump(reinterpret_cast<u_char *>(dumper), &header, txframe);
     }
 }
