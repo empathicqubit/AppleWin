@@ -77,15 +77,13 @@ namespace
         return sum;
     }
 
-    uint16_t checksum(const void *addr, int count, int start_sum)
+    uint16_t checksum(const void *addr, int count)
     {
         /* Compute Internet Checksum for "count" bytes
          *         beginning at location "addr".
          * Taken from https://tools.ietf.org/html/rfc1071
          */
-        uint32_t sum = start_sum;
-
-        sum += sum_every_16bits(addr, count);
+        uint32_t sum = sum_every_16bits(addr, count);
 
         /*  Fold 32-bit sum to 16 bits */
         while (sum >> 16)
@@ -97,7 +95,7 @@ namespace
 }
 
 std::vector<uint8_t> createETH2Frame(const std::vector<uint8_t> &data,
-                                     const MACAddress * sourceMac, const MACAddress *destinationMac,
+                                     const MACAddress *sourceMac, const MACAddress *destinationMac,
                                      const uint8_t ttl, const uint8_t tos, const uint8_t protocol,
                                      const uint32_t sourceAddress, const uint32_t destinationAddress)
 {
@@ -119,7 +117,7 @@ std::vector<uint8_t> createETH2Frame(const std::vector<uint8_t> &data,
     ip4header->proto = protocol;
     ip4header->sourceAddress = sourceAddress;
     ip4header->destinationAddress = destinationAddress;
-    ip4header->checksum = checksum(ip4header, sizeof(IP4Header), 0);
+    ip4header->checksum = checksum(ip4header, sizeof(IP4Header));
 
     memcpy(frame.data() + sizeof(ETH2Frame) + sizeof(IP4Header), data.data(), data.size());
 

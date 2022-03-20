@@ -81,7 +81,7 @@ private:
 
     std::map<uint32_t, MACAddress> myARPTable;
 
-    void GetMACAddress(const uint32_t address, const MACAddress * & mac);
+    void getMACAddress(const uint32_t address, const MACAddress * & mac);
 
     void setSocketModeRegister(const size_t i, const uint16_t address, const uint8_t value);
     void setTXSizes(const uint16_t address, uint8_t value);

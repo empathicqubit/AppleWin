@@ -677,7 +677,7 @@ void Uthernet2::sendDataIPRaw(const size_t i, std::vector<uint8_t> &payload)
 
     const MACAddress * sourceMac = reinterpret_cast<const MACAddress *>(myMemory.data() + W5100_SHAR0);
     const MACAddress * destinationMac;
-    GetMACAddress(destination, destinationMac);
+    getMACAddress(destination, destinationMac);
 
     std::vector<uint8_t> packet = createETH2Frame(payload, sourceMac, destinationMac, ttl, tos, protocol, source, destination);
 
@@ -1293,7 +1293,7 @@ void Uthernet2::InitializeIO(LPBYTE pCxRomPeripheral)
     RegisterIoHandler(m_slot, u2_C0, u2_C0, nullptr, nullptr, this, nullptr);
 }
 
-void Uthernet2::GetMACAddress(const uint32_t address, const MACAddress * & mac)
+void Uthernet2::getMACAddress(const uint32_t address, const MACAddress * & mac)
 {
     const auto it = myARPTable.find(address);
     if (it != myARPTable.end())
@@ -1303,12 +1303,31 @@ void Uthernet2::GetMACAddress(const uint32_t address, const MACAddress * & mac)
     else
     {
         MACAddress & macAddr = myARPTable[address];
-        memset(macAddr.address, 0xFF, sizeof(macAddr.address));
+        const uint32_t source  = readAddress(myMemory.data() + W5100_SIPR0);
 
-        // need to handle the case of the W5100 self address unknown to Windows
-        if (address != INADDR_BROADCAST)
+        if (address == source)
         {
-            myNetworkBackend->getMACAddress(address, macAddr);
+            const uint8_t * sourceMac = myMemory.data() + W5100_SHAR0;
+            memcpy(macAddr.address, sourceMac, sizeof(macAddr.address));
+        }
+        else
+        {
+            memset(macAddr.address, 0xFF, sizeof(macAddr.address));  // fallback to broadcast
+            if (address != INADDR_BROADCAST)
+            {
+                const uint32_t subnet  = readAddress(myMemory.data() + W5100_SUBR0);
+                if ((address & subnet) == (source & subnet))
+                {
+                    // same network: send ARP request
+                    myNetworkBackend->getMACAddress(address, macAddr);
+                }
+                else
+                {
+                    const uint32_t gateway = readAddress(myMemory.data() + W5100_GAR0);
+                    // different network: go via gateway
+                    myNetworkBackend->getMACAddress(gateway, macAddr);
+                }
+            }
         }
         mac = &macAddr;
     }
