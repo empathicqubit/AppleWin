@@ -29,6 +29,8 @@ struct Socket
 
     socket_t myFD;
     int myErrno;
+    size_t myDataReceived;
+    size_t myDataRead;
 
     bool isOpen() const;
     void clearFD();

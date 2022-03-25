@@ -78,9 +78,9 @@ typedef int socklen_t;
 #define ETH_MINIMUM_SIZE (6 + 6 + 2)
 
 // #define U2_LOG_VERBOSE
-// #define U2_LOG_TRAFFIC
-// #define U2_LOG_STATE
-// #define U2_LOG_UNKNOWN
+#define U2_LOG_TRAFFIC
+#define U2_LOG_STATE
+#define U2_LOG_UNKNOWN
 
 #define MAC_FMT "%02X:%02X:%02X:%02X:%02X:%02X"
 #define MAC_DEST(p) p[0], p[1], p[2], p[3], p[4], p[5]
@@ -186,6 +186,8 @@ Socket::Socket()
     , sn_sr(W5100_SN_SR_CLOSED)
     , myFD(INVALID_SOCKET)
     , myErrno(0)
+    , myDataRead(0)
+    , myDataReceived(0)
 {
 }
 
@@ -198,6 +200,9 @@ void Socket::clearFD()
 #else
         close(myFD);
 #endif
+#ifdef U2_LOG_STATE
+        LogFileOutput("U2: Connection closed\n");
+#endif
     }
     myFD = INVALID_SOCKET;
     sn_sr = W5100_SN_SR_CLOSED;
@@ -208,6 +213,8 @@ void Socket::setFD(const socket_t fd, const int status)
     clearFD();
     myFD = fd;
     myErrno = 0;
+    myDataRead = 0;
+    myDataReceived = 0;
     sn_sr = status;
 }
 
@@ -466,7 +473,9 @@ void Uthernet2::updateRSR(const size_t i)
 #ifdef U2_LOG_TRAFFIC
     if (socket.sn_rx_rsr != dataPresent)
     {
-        LogFileOutput("U2: Recv[%" SIZE_T_FMT "]: %d -> %d bytes\n", i, socket.sn_rx_rsr, dataPresent);
+        const size_t dataRead = socket.sn_rx_rsr - dataPresent;
+        socket.myDataRead += dataRead;
+        LogFileOutput("U2: Recv[%" SIZE_T_FMT "]: %d - %" SIZE_T_FMT " -> %d (%" SIZE_T_FMT ") bytes\n", i, socket.sn_rx_rsr, dataRead, dataPresent, socket.myDataRead);
     }
 #endif
     socket.sn_rx_rsr = dataPresent;
@@ -643,9 +652,10 @@ void Uthernet2::receiveOnePacketFromSocket(const size_t i)
 #endif
             if (data > 0)
             {
+                socket.myDataReceived += data;
                 writeDataForProtocol(socket, myMemory, buffer.data(), data, source);
 #ifdef U2_LOG_TRAFFIC
-                LogFileOutput("U2: Read %s[%" SIZE_T_FMT "]: +%" SIZE_T_FMT " -> %d bytes\n", proto, i, data, socket.sn_rx_rsr);
+                LogFileOutput("U2: Read %s[%" SIZE_T_FMT "]: +%" SIZE_T_FMT " -> %d (%" SIZE_T_FMT ") bytes\n", proto, i, data, socket.sn_rx_rsr, socket.myDataReceived);
 #endif
             }
             else if (data == 0)
