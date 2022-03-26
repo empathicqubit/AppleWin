@@ -660,7 +660,10 @@ void Uthernet2::receiveOnePacketFromSocket(const size_t i)
             }
             else if (data == 0)
             {
-                // gracefull termination
+#ifdef U2_LOG_TRAFFIC
+                LogFileOutput("U2: %s[%" SIZE_T_FMT "]: recvfrom result = %" PTRDIFF_T_FMT "\n", proto, i, data);
+#endif
+                // graceful termination
                 socket.clearFD();
             }
             else // data < 0;
@@ -669,7 +672,7 @@ void Uthernet2::receiveOnePacketFromSocket(const size_t i)
                 if (error != SOCK_EAGAIN && error != SOCK_EWOULDBLOCK)
                 {
 #ifdef U2_LOG_TRAFFIC
-                    LogFileOutput("U2: %s[%" SIZE_T_FMT "]: recvfrom error %" ERROR_FMT "\n", proto, i, STRERROR(error));
+                    LogFileOutput("U2: %s[%" SIZE_T_FMT "]: recvfrom result = %" PTRDIFF_T_FMT ", error = %" ERROR_FMT "\n", proto, i, data, STRERROR(error));
 #endif
                     socket.clearFD();
                 }
