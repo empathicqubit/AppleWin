@@ -1,0 +1,126 @@
+name: Release
+
+on:
+    workflow_dispatch:
+        inputs:
+            tag:
+                description: The git tag/ref to checkout
+                required: true
+                default: 'vFIXME'
+
+jobs:
+  build:
+    env:
+      DEBIAN_FRONTEND: noninteractive 
+    outputs:
+      filename: ${{ steps.get_filename.outputs.filename }}
+
+    runs-on: ubuntu-18.04
+
+    strategy:
+      matrix:
+          include:
+              - os_name: debian
+                os_codename: bullseye
+                build_type: 'QT'
+                has_backports: backports
+
+              - os_name: debian
+                os_codename: bookworm
+                build_type: 'QT'
+
+
+              - os_name: ubuntu
+                os_codename: bionic
+                is_lts: lts
+                build_type: 'WITHOUT_QT'
+
+              - os_name: ubuntu
+                os_codename: focal
+                is_lts: lts
+                build_type: 'QT'
+
+              - os_name: ubuntu
+                os_codename: hirsute
+                build_type: 'QT'
+
+              - os_name: ubuntu
+                os_codename: impish
+                build_type: 'QT'
+
+    container: ${{ matrix.os_name }}:${{ matrix.os_codename }}
+
+    steps:
+    - run: apt-get update && apt-get install -y --no-install-recommends git ca-certificates apt-transport-https curl gpg gpg-agent lsb-release dpkg-dev apt-utils rsync file
+
+    - name: Import GPG key
+      id: import_gpg
+      uses: crazy-max/ghaction-import-gpg@v4
+      with:
+        gpg_private_key: ${{ secrets.PACKAGE_SIGNING_KEY }}
+        passphrase: ''
+
+    - run: curl -L https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
+    - if: matrix.has_backports == 'backports'
+      run: echo 'deb http://deb.debian.org/debian ${{ matrix.os_codename }}-backports main' >> /etc/apt/sources.list
+
+    - if: matrix.is_lts == 'lts'
+      run: echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/${{ matrix.os_name }}/ $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/kitware.list >/dev/null
+
+    - run: git clone --depth 1 --branch ${{ github.event.inputs.tag || github.event.release.tag_name }} "${{ github.server_url }}/${{ github.repository }}" . && git submodule init && git submodule update
+
+    - run: INSTALL_DEPS=${{ matrix.build_type }} bash ./source/linux/build.sh
+
+    - run: cd build/packages && rm -rf ./_CPack_Packages
+    - run: cd build/packages && dpkg-scanpackages --multiversion . > Packages
+    - run: cd build/packages && gzip -k -f Packages
+
+    - run: cd build/packages && apt-ftparchive release . > Release
+    - run: cd build/packages && gpg --default-key "${{ secrets.PACKAGE_SIGNING_EMAIL }}" -abs -o - Release > Release.gpg
+    - run: cd build/packages && gpg --default-key "${{ secrets.PACKAGE_SIGNING_EMAIL }}" --clearsign -o - Release > InRelease
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: ${{ matrix.os_name }}-${{ matrix.os_codename }}
+        path: ./build/packages/**/*
+
+  deploy:
+    needs: build
+
+    runs-on: ubuntu-18.04
+
+    strategy:
+      max-parallel: 1
+      matrix:
+          include:
+              - os_name: debian
+                os_codename: bullseye
+              - os_name: debian
+                os_codename: bookworm
+
+              - os_name: ubuntu
+                os_codename: bionic
+              - os_name: ubuntu
+                os_codename: focal
+              - os_name: ubuntu
+                os_codename: hirsute
+              - os_name: ubuntu
+                os_codename: impish
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 1
+        ref: ${{ github.event.inputs.tag || github.event.release.tag_name }}
+
+    - uses: actions/download-artifact@v2
+      with:
+        name: ${{ matrix.os_name }}-${{ matrix.os_codename }}
+        path: packages
+
+    - name: Deploy
+      uses: JamesIves/github-pages-deploy-action@v4.3.0
+      with:
+        branch: gh-pages
+        folder: packages
+        target-folder: packages/${{ matrix.os_name }}/dists/${{ matrix.os_codename }}
