@@ -14,7 +14,7 @@ private:
 	HANDLE myRiffFile;
 	DWORD myTotalOffset;
 	DWORD myDataOffset;
-	DWORD myTotalNumberOfBytesWritten;
+	DWORD myTotalNumberOfSampleBytesWritten;
 	unsigned int myNumChannels;
 };
 

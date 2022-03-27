@@ -38,7 +38,7 @@ RiffOutput::RiffOutput()
 	: myRiffFile(INVALID_HANDLE_VALUE)
 	, myTotalOffset(0)
 	, myDataOffset(0)
-	, myTotalNumberOfBytesWritten(0)
+	, myTotalNumberOfSampleBytesWritten(0)
 	, myNumChannels(0)
 {
 }
@@ -57,7 +57,7 @@ int RiffOutput::InitWriteFile(const char* pszFile, unsigned int sample_rate, uns
 	if (myRiffFile == INVALID_HANDLE_VALUE)
 		return 1;
 
-	myTotalNumberOfBytesWritten = 0;
+	myTotalNumberOfSampleBytesWritten = 0;
 	myNumChannels = NumChannels;
 
 	//
@@ -118,17 +118,15 @@ int RiffOutput::FinishWriteFile()
 
 	//
 
-	UINT32 temp32;
-
 	DWORD dwNumberOfBytesWritten;
-	
-	temp32 = myTotalNumberOfBytesWritten - (myTotalOffset + 4);
+
+	DWORD fileSize = SetFilePointer(myRiffFile, 0, NULL, FILE_END);
+	DWORD temp32 = fileSize - (myTotalOffset + 4);
 	SetFilePointer(myRiffFile, myTotalOffset, NULL, FILE_BEGIN);
 	WriteFile(myRiffFile, &temp32, 4, &dwNumberOfBytesWritten, NULL);
 
-	temp32 = myTotalNumberOfBytesWritten - (myDataOffset + 4);
 	SetFilePointer(myRiffFile, myDataOffset, NULL, FILE_BEGIN);
-	WriteFile(myRiffFile, &temp32, 4, &dwNumberOfBytesWritten, NULL);
+	WriteFile(myRiffFile, &myTotalNumberOfSampleBytesWritten, 4, &dwNumberOfBytesWritten, NULL);
 
 	int result = CloseHandle(myRiffFile);
 	myRiffFile = INVALID_HANDLE_VALUE;
@@ -152,7 +150,7 @@ int RiffOutput::PutSamples(const short* buf, unsigned int uSamples)
 		&dwNumberOfBytesWritten,
 		NULL);
 
-	myTotalNumberOfBytesWritten += dwNumberOfBytesWritten;
+	myTotalNumberOfSampleBytesWritten += dwNumberOfBytesWritten;
 
 	return 0;
 }
