@@ -1,0 +1,16 @@
+Package: applewin
+Version: 1.30.9.0
+Architecture: amd64
+Maintainer: audetto <mariofutire@gmail.com>
+Installed-Size: 4353
+Depends: libyaml-0-2,libminizip1,libqt5gui5,libqt5widgets5,libqt5multimedia5,libqt5gamepad5,libncursesw6,libevdev2,libsdl2-image-2.0-0,libsdl2-2.0-0,libgles2,libpcap0.8,libslirp0,libboost-program-options1.74.0
+Filename: ./applewin_1.30.9.0_amd64.deb
+Size: 1825092
+MD5sum: 7e45910b2f061d911a058473cdc65ed9
+SHA1: 2f80414e5eeb65257b5dd672c172404f984ed53b
+SHA256: ef2996080bc524b3fa9d71c1e24aafee87f7a25b046f8ae75b3b16d631fc75fc
+Section: devel
+Priority: optional
+Homepage: https://github.com/audetto/AppleWin
+Description: Apple ][ emulator for Linux
+
