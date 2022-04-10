@@ -2,13 +2,13 @@ Package: applewin
 Version: 1.30.9.0
 Architecture: amd64
 Maintainer: audetto <mariofutire@gmail.com>
-Installed-Size: 4444
-Depends: libyaml-0-2,libminizip1,libqt5gui5,libqt5widgets5,libqt5multimedia5,libqt5gamepad5,libncursesw6,libevdev2,libsdl2-image-2.0-0,libsdl2-2.0-0,libgles2,libpcap0.8,libslirp0,libboost-program-options1.74.0
+Installed-Size: 8949
+Depends: libboost-program-options1.74.0 (>= 1.74.0), libc6 (>= 2.33), libevdev2 (>= 0.9.1), libgcc-s1 (>= 3.0), libgles2, libminizip1 (>= 1.1), libncurses6 (>= 6), libpcap0.8 (>= 0.9.8), libqt5core5a (>= 5.15.1), libqt5gamepad5 (>= 5.11.1), libqt5gui5 (>= 5.14.1) | libqt5gui5-gles (>= 5.14.1), libqt5multimedia5 (>= 5.9.0~rc), libqt5widgets5 (>= 5.4.0), libsdl2-2.0-0 (>= 2.0.12), libsdl2-image-2.0-0 (>= 2.0.2), libslirp0 (>= 4.1.0), libstdc++6 (>= 5.2), libtinfo6 (>= 6), libyaml-0-2, zlib1g (>= 1:1.1.4)
 Filename: ./applewin_1.30.9.0_amd64.deb
-Size: 1851370
-MD5sum: 12567dafa1b81b839151fddf5466acd1
-SHA1: 52f721a7ad87fbaab61ae340e114865b7e4d0242
-SHA256: d0133861458ed50256067faf12a3ba0bcd3d306bb724fdc5814567da95c88397
+Size: 4029342
+MD5sum: c96eaef4ded76334d3abb78d82c062bd
+SHA1: f7edc5e045b3399df84c97e4ed3dbc023873f7c8
+SHA256: 094118dd03b04ec17ed45418801836b732355e8ba457968622de3ec4dcbaea4c
 Section: devel
 Priority: optional
 Homepage: https://github.com/audetto/AppleWin
