@@ -5,10 +5,10 @@ Maintainer: audetto <mariofutire@gmail.com>
 Installed-Size: 6437
 Depends: libboost-program-options1.65.1, libc6 (>= 2.27), libevdev2 (>= 0.9.1), libgcc1 (>= 1:3.0), libgles2, libminizip1 (>= 1.1), libncurses5 (>= 6), libpcap0.8 (>= 0.9.8), libsdl2-2.0-0 (>= 2.0.8), libsdl2-image-2.0-0 (>= 2.0.2), libstdc++6 (>= 5.2), libtinfo5 (>= 6), libyaml-0-2, zlib1g (>= 1:1.1.4)
 Filename: ./applewin_1.30.9.0_amd64.deb
-Size: 2830110
-MD5sum: 1999440e858fbd6f97e83307a5651852
-SHA1: 04af140b882c59eaca4feae9a2e6a5409b328edb
-SHA256: 69cbe472d37488685daf122b0230aef0ed395510da5eb8eeb0c89909671ef2e7
+Size: 2830120
+MD5sum: 1210d2f18942db1ba7b136b29ff4b99d
+SHA1: e5051354c72346ceb1901793c52b0e191242cde4
+SHA256: b9c9d6e339da2c4bdb0099801d9e93e363e7eba8e048eddd741163e4fed63df8
 Section: devel
 Priority: optional
 Homepage: https://github.com/audetto/AppleWin
