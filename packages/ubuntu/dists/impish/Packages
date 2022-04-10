@@ -5,10 +5,10 @@ Maintainer: audetto <mariofutire@gmail.com>
 Installed-Size: 8935
 Depends: libboost-program-options1.74.0 (>= 1.74.0), libc6 (>= 2.34), libevdev2 (>= 0.9.1), libgcc-s1 (>= 3.0), libgles2, libminizip1 (>= 1.1), libncurses6 (>= 6), libpcap0.8 (>= 0.9.8), libqt5core5a (>= 5.15.1), libqt5gamepad5 (>= 5.11.1), libqt5gui5 (>= 5.14.1) | libqt5gui5-gles (>= 5.14.1), libqt5multimedia5 (>= 5.9.0~rc), libqt5widgets5 (>= 5.4.0), libsdl2-2.0-0 (>= 2.0.12), libsdl2-image-2.0-0 (>= 2.0.2), libslirp0 (>= 4.1.0), libstdc++6 (>= 11), libtinfo6 (>= 6), libyaml-0-2, zlib1g (>= 1:1.1.4)
 Filename: ./applewin_1.30.9.0_amd64.deb
-Size: 4042630
-MD5sum: 6dfb1447fc53799633b7a617911d8a44
-SHA1: e701289aaf6b3f2b4256601a3748be3464a86c02
-SHA256: d978be61ff0d0d7893101d48f03cc082c3ce19d354717644c081ff15532ecb64
+Size: 4042616
+MD5sum: 359c763cad11a0d22c663a8af7335ea2
+SHA1: f66243f9b472e2c3269f58937621ed9c9f789dc8
+SHA256: b5744de0e5e80fd17fca56cfb7929a9a16ccba94a11c92ce5538cf819b97fd97
 Section: devel
 Priority: optional
 Homepage: https://github.com/audetto/AppleWin
