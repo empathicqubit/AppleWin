@@ -25,7 +25,7 @@ jobs:
     container: ${{ matrix.os_name }}:${{ matrix.os_codename }}
 
     steps:
-    - run: apt-get update && apt-get install -y --no-install-recommends git ca-certificates apt-transport-https curl gpg gpg-agent lsb-release dpkg-dev apt-utils rsync file
+    - run: dnf -y update && dnf -y install git ca-certificates apt-transport-https curl gpg gpg-agent lsb-release dpkg-dev apt-utils rsync file && dnf clean all
 
     - name: Import GPG key
       id: import_gpg
