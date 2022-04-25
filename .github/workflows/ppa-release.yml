@@ -9,6 +9,8 @@ on:
 
 jobs:
   build_rpm:
+    env:
+      REPO_URL: ${{ github.server_url }}/audetto/AppleWin
     runs-on: ubuntu-18.04
 
     strategy:
@@ -35,13 +37,8 @@ jobs:
         passphrase: ''
 
     - run: curl -L https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
-    - if: matrix.has_backports == 'backports'
-      run: echo 'deb http://deb.debian.org/debian ${{ matrix.os_codename }}-backports main' >> /etc/apt/sources.list
 
-    - if: matrix.is_lts == 'lts'
-      run: echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/${{ matrix.os_name }}/ $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/kitware.list >/dev/null
-
-    - run: git clone --depth 1 --branch ${{ github.event.inputs.tag || github.event.release.tag_name }} "${{ github.server_url }}/${{ github.repository }}" . && git submodule init && git submodule update
+    - run: git clone --depth 1 --branch ${{ github.event.inputs.tag || github.event.release.tag_name }} "$REPO_URL" . && git submodule init && git submodule update
 
     - run: CPACK_TYPE=RPM INSTALL_DEPS=${{ matrix.build_type }} bash ./source/linux/build.sh
 
@@ -63,6 +60,7 @@ jobs:
   build_deb:
     env:
       DEBIAN_FRONTEND: noninteractive 
+      REPO_URL: ${{ github.server_url }}/audetto/AppleWin
 
     runs-on: ubuntu-18.04
 
@@ -116,7 +114,7 @@ jobs:
     - if: matrix.is_lts == 'lts'
       run: echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/${{ matrix.os_name }}/ $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/kitware.list >/dev/null
 
-    - run: git clone --depth 1 --branch ${{ github.event.inputs.tag || github.event.release.tag_name }} "${{ github.server_url }}/${{ github.repository }}" . && git submodule init && git submodule update
+    - run: git clone --depth 1 --branch ${{ github.event.inputs.tag || github.event.release.tag_name }} "$REPO_URL" . && git submodule init && git submodule update
 
     - run: INSTALL_DEPS=${{ matrix.build_type }} bash ./source/linux/build.sh
 
