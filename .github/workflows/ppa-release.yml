@@ -36,7 +36,7 @@ jobs:
         gpg_private_key: ${{ secrets.PACKAGE_SIGNING_KEY }}
         passphrase: ''
 
-    - run: git clone --depth 1 --branch ${{ github.event.inputs.tag || github.event.release.tag_name }} "$REPO_URL" . && git submodule init && git submodule update
+    - run: git clone --depth 1 --branch ${{ github.ref }} "$REPO_URL" . && git submodule init && git submodule update
 
     - run: CPACK_TYPE=RPM INSTALL_DEPS=${{ matrix.build_type }} bash ./source/linux/build.sh
 
@@ -113,7 +113,7 @@ jobs:
     - if: matrix.is_lts == 'lts'
       run: echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/${{ matrix.os_name }}/ $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/kitware.list >/dev/null
 
-    - run: git clone --depth 1 --branch ${{ github.event.inputs.tag || github.event.release.tag_name }} "$REPO_URL" . && git submodule init && git submodule update
+    - run: git clone --depth 1 --branch ${{ github.ref }} "$REPO_URL" . && git submodule init && git submodule update
 
     - run: INSTALL_DEPS=${{ matrix.build_type }} bash ./source/linux/build.sh
 
