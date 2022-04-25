@@ -1,19 +1,68 @@
 name: Release
 
 on:
-    workflow_dispatch:
-        inputs:
-            tag:
-                description: The git tag/ref to checkout
-                required: true
-                default: 'vFIXME'
+    push:
+        branches:
+            - master
+        schedule:
+            - cron: '0 0 * * *'
 
 jobs:
-  build:
+  build_rpm:
+    runs-on: ubuntu-18.04
+
+    strategy:
+      matrix:
+          include:
+              - os_name: fedora
+                os_codename: '34'
+                build_type: 'QT'
+
+              - os_name: fedora
+                os_codename: '35'
+                build_type: 'QT'
+
+    container: ${{ matrix.os_name }}:${{ matrix.os_codename }}
+
+    steps:
+    - run: apt-get update && apt-get install -y --no-install-recommends git ca-certificates apt-transport-https curl gpg gpg-agent lsb-release dpkg-dev apt-utils rsync file
+
+    - name: Import GPG key
+      id: import_gpg
+      uses: crazy-max/ghaction-import-gpg@v4
+      with:
+        gpg_private_key: ${{ secrets.PACKAGE_SIGNING_KEY }}
+        passphrase: ''
+
+    - run: curl -L https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
+    - if: matrix.has_backports == 'backports'
+      run: echo 'deb http://deb.debian.org/debian ${{ matrix.os_codename }}-backports main' >> /etc/apt/sources.list
+
+    - if: matrix.is_lts == 'lts'
+      run: echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/${{ matrix.os_name }}/ $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/kitware.list >/dev/null
+
+    - run: git clone --depth 1 --branch ${{ github.event.inputs.tag || github.event.release.tag_name }} "${{ github.server_url }}/${{ github.repository }}" . && git submodule init && git submodule update
+
+    - run: CPACK_TYPE=RPM INSTALL_DEPS=${{ matrix.build_type }} bash ./source/linux/build.sh
+
+    - run: cd build/packages && rm -rf ./_CPack_Packages
+    - run: cd build/packages && dpkg-scanpackages --multiversion . > Packages
+    - run: cd build/packages && gzip -k -f Packages
+
+    - run: cd build/packages && apt-ftparchive release . > Release
+    - run: cd build/packages && gpg --default-key "${{ secrets.PACKAGE_SIGNING_EMAIL }}" -abs -o - Release > Release.gpg
+    - run: cd build/packages && gpg --default-key "${{ secrets.PACKAGE_SIGNING_EMAIL }}" --clearsign -o - Release > InRelease
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: ${{ matrix.os_name }}-${{ matrix.os_codename }}
+        path: ./build/packages/**/*
+
+
+
+  build_deb:
     env:
       DEBIAN_FRONTEND: noninteractive 
-    outputs:
-      filename: ${{ steps.get_filename.outputs.filename }}
 
     runs-on: ubuntu-18.04
 
@@ -85,7 +134,9 @@ jobs:
         path: ./build/packages/**/*
 
   deploy:
-    needs: build
+    needs:
+    - build_deb
+    - build_rpm
 
     runs-on: ubuntu-18.04
 
@@ -93,6 +144,11 @@ jobs:
       max-parallel: 1
       matrix:
           include:
+              - os_name: fedora
+                os_codename: '34'
+              - os_name: fedora
+                os_codename: '35'
+
               - os_name: debian
                 os_codename: bullseye
               - os_name: debian
@@ -110,8 +166,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
       with:
+        repository: audetto/AppleWin
         fetch-depth: 1
-        ref: ${{ github.event.inputs.tag || github.event.release.tag_name }}
+        ref: ${{ github.event.inputs.tag }}
 
     - uses: actions/download-artifact@v2
       with:

@@ -22,4 +22,4 @@ cd build
 
 cmake "$@" -DBUILD_APPLEN=1 $BUILD_QAPPLE -DBUILD_SA2=1 -DCMAKE_BUILD_TYPE=RELEASE "$BASEDIR"
 make -j $(nproc)
-cpack -G DEB -B "$BASEDIR/build/packages"
+cpack -G "${CPACK_TYPE:-DEB}" -B "$BASEDIR/build/packages"
